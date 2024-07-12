@@ -18,7 +18,11 @@ mod item;
 mod ty;
 
 use crate::ir::ty::type_;
-pub use crate::ir::{define::Stmt, item::Item, ty::Type};
+pub use crate::ir::{
+    define::Stmt,
+    item::Item,
+    ty::Type,
+};
 
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
 pub struct FnSig<'a> {
