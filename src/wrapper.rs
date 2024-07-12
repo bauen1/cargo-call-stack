@@ -30,7 +30,7 @@ pub(crate) fn wrapper() -> anyhow::Result<i32> {
     let rustc_args = args.collect::<Vec<_>>();
 
     /* Short-circuit the rustc -vV invocation */
-    if rustc_args.iter().any(|v| v == "-V") {
+    if rustc_args.iter().any(|v| v == "-vV") {
         rustc.args(&rustc_args);
 
         let status = rustc.status()
