@@ -28,6 +28,16 @@ pub(crate) fn wrapper() -> anyhow::Result<i32> {
     let mut rustc = Command::new(&rustc_path);
 
     let rustc_args = args.collect::<Vec<_>>();
+
+    /* Short-circuit the rustc -vV invocation */
+    if rustc_args.iter().any(|v| v == "-V") {
+        rustc.args(&rustc_args);
+
+        let status = rustc.status()
+            .map_err(|e| anyhow!("failed to spawn `{}`: {}", rustc_path, e))?;
+        return Ok(status.code().unwrap_or(-1));
+    }
+
     let args = RustcArgs::parse(&mut rustc_args.iter().map(|s| &**s))?;
 
     for ext in &args.extern_crates {
