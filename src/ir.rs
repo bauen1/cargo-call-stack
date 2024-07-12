@@ -20,7 +20,7 @@ mod ty;
 use crate::ir::ty::type_;
 pub use crate::ir::{
     define::Stmt,
-    item::{Declare, Item},
+    item::Item,
     ty::Type,
 };
 
@@ -159,9 +159,9 @@ fn null(i: &str) -> IResult<&str, Null> {
 #[derive(Clone, Copy, Debug, PartialEq)]
 struct Undef;
 
-fn undef(i: &str) -> IResult<&str, Null> {
+fn undef(i: &str) -> IResult<&str, Undef> {
     let i = tag("undef")(i)?.0;
-    Ok((i, Null))
+    Ok((i, Undef))
 }
 
 // `internal`, `fastcc`, `dereferenceable(4)`, etc.
