@@ -59,7 +59,7 @@ pub(crate) fn wrapper() -> anyhow::Result<i32> {
 
 struct RustcArgs {
     extra_filename: String,
-    crate_name: String,
+    crate_name: Option<String>,
     out_dir: Option<String>,
     extern_crates: Vec<Extern>,
 }
@@ -71,7 +71,6 @@ struct Extern {
 
 impl RustcArgs {
     fn parse(args: &mut dyn Iterator<Item = &str>) -> anyhow::Result<Self> {
-        const NOPRELUDE: &str = "noprelude:";
         const DASH_C: &str = "-C";
 
         let mut extra_filename = None;
@@ -86,8 +85,12 @@ impl RustcArgs {
                         .next()
                         .ok_or_else(|| anyhow!("missing argument for `--extern`"))?;
                     let mut arg = &*arg;
-                    if arg.starts_with(NOPRELUDE) {
-                        arg = &arg[NOPRELUDE.len()..];
+
+                    if let Some(colon_pos) = arg.find(':') {
+                        let eq_pos = arg.find('=');
+                        if eq_pos.is_none() || colon_pos < eq_pos.unwrap() {
+                            arg = &arg[colon_pos + 1..];
+                        }
                     }
 
                     let mut split = arg.splitn(2, '=');
@@ -145,7 +148,7 @@ impl RustcArgs {
 
         Ok(Self {
             extra_filename: extra_filename.unwrap_or_default(),
-            crate_name: crate_name.ok_or_else(|| anyhow!("missing `--crate-name` argument"))?,
+            crate_name,
             out_dir,
             extern_crates,
         })

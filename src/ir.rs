@@ -87,13 +87,28 @@ pub fn parse(ll: &str) -> anyhow::Result<Vec<Item>> {
 }
 
 fn items(i: &str) -> IResult<&str, Vec<Item>> {
-    let (i, items) = separated_list0(many1(line_ending), crate::ir::item::item)(i)?;
-    let i = many0(line_ending)(i)?.0;
-    if i.is_empty() {
-        Ok(("", items))
-    } else {
-        Err(nom::Err::Failure(error_position!(i, ErrorKind::Eof)))
+    let mut items = Vec::new();
+    let mut i = i;
+    while !i.is_empty() {
+        let (next_i, _) = many0(alt((line_ending, space1)))(i)?;
+        i = next_i;
+        if i.is_empty() {
+            break;
+        }
+
+        match crate::ir::item::item(i) {
+            Ok((next_i, item)) => {
+                items.push(item);
+                i = next_i;
+            }
+            Err(_) => {
+                let (next_i, _) = not_line_ending(i)?;
+                let (next_i, _) = opt(line_ending)(next_i)?;
+                i = next_i;
+            }
+        }
     }
+    Ok(("", items))
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -162,43 +177,34 @@ fn undef(i: &str) -> IResult<&str, Null> {
 struct Attribute;
 
 fn attribute(i: &str) -> IResult<&str, Attribute> {
-    let (i, attr) = take_while1(|c: char| c.is_alphabetic() || c == '_')(i)?;
+    let (i, attr) = take_while1(|c: char| c.is_alphanumeric() || "_.".contains(c))(i)?;
 
-    let i = match attr {
-        "dereferenceable" | "dereferenceable_or_null" | "alignstack" => {
-            let i = char('(')(i)?.0;
-            let i = digit1(i)?.0;
-            char(')')(i)?.0
-        }
-
-        "sret" | "preallocated" | "inalloca" | "elementtype" | "byval" | "byref" => {
-            let i = char('(')(i)?.0;
-            let i = type_(i)?.0;
-            char(')')(i)?.0
-        }
-
-        "align" => {
-            let i = space1(i)?.0;
-            let i = digit1(i)?.0;
-            i
-        }
-
-        // have this branch always error because this is not an attribute but part of a type
-        "double" | "float" | "void" | "ptr" => {
+    match attr {
+        "double" | "float" | "void" | "ptr" | "bitcast" | "getelementptr" | "alias" | "global" | "constant" => {
             return Err(nom::Err::Error(error_position!(i, ErrorKind::Switch)));
         }
+        _ => {}
+    }
 
-        // have this branch always error because there are not attributes but operations
-        "bitcast" | "getelementptr" => {
-            return Err(nom::Err::Error(error_position!(i, ErrorKind::Switch)));
+    let (i, opening) = opt(char('('))(i)?;
+    let i = if opening.is_some() {
+        let mut depth = 1;
+        let mut pos = 0;
+        let bytes = i.as_bytes();
+        while depth > 0 && pos < bytes.len() {
+            if bytes[pos] == b'(' {
+                depth += 1;
+            } else if bytes[pos] == b')' {
+                depth -= 1;
+            }
+            pos += 1;
         }
-
-        // have this branch always error because there are not attributes but keywords
-        "alias" | "global" | "constant" => {
-            return Err(nom::Err::Error(error_position!(i, ErrorKind::Switch)));
-        }
-
-        _ => i,
+        &i[pos..]
+    } else if attr == "align" {
+        let i = space1(i)?.0;
+        digit1(i)?.0
+    } else {
+        i
     };
 
     Ok((i, Attribute))

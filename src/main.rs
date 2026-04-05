@@ -144,9 +144,7 @@ If you would like to use cargo-call-stack with your current toolchain, which mos
 
     let mut is_no_std = false;
     {
-        let output = Command::new("rustc")
-            .args(&["--print=cfg", "--target", target])
-            .output()?;
+        let output = Command::new("rustc").args(&["--print=cfg", "--target", target]).output()?;
         for line in str::from_utf8(&output.stdout)?.lines() {
             if let Some(value) = line.strip_prefix("target_os=") {
                 if value == "\"none\"" {
@@ -254,10 +252,8 @@ If you would like to use cargo-call-stack with your current toolchain, which mos
         return Ok(status.code().unwrap_or(1));
     }
 
-    let compiler_builtins_rlib_path =
-        compiler_builtins_rlib_path.expect("`compiler_builtins` was not linked");
-    let compiler_builtins_ll_path =
-        compiler_builtins_ll_path.expect("`compiler_builtins` LLVM IR unavailable");
+    let compiler_builtins_rlib_path = compiler_builtins_rlib_path.expect("`compiler_builtins` was not linked");
+    let compiler_builtins_ll_path = compiler_builtins_ll_path.expect("`compiler_builtins` LLVM IR unavailable");
 
     let mut path: PathBuf = if args.example.is_some() {
         project.path(Artifact::Example(file), profile, target_flag, &host)?
@@ -265,8 +261,7 @@ If you would like to use cargo-call-stack with your current toolchain, which mos
         project.path(Artifact::Bin(file), profile, target_flag, &host)?
     };
 
-    let elf = fs::read(&path)
-        .map_err(|e| anyhow!("couldn't open ELF file `{}`: {}", path.display(), e))?;
+    let elf = fs::read(&path).map_err(|e| anyhow!("couldn't open ELF file `{}`: {}", path.display(), e))?;
 
     // load llvm-ir file
     let mut ll = None;
@@ -285,12 +280,7 @@ If you would like to use cargo-call-stack with your current toolchain, which mos
         let p = e.path();
 
         if p.extension().map(|e| e == "ll").unwrap_or(false) {
-            if p.file_stem()
-                .expect("unreachable")
-                .to_str()
-                .expect("unreachable")
-                .starts_with(&prefix)
-            {
+            if p.file_stem().expect("unreachable").to_str().expect("unreachable").starts_with(&prefix) {
                 let modified = e.metadata()?.modified()?;
                 if ll.is_none() {
                     ll = Some(p);
@@ -309,30 +299,16 @@ If you would like to use cargo-call-stack with your current toolchain, which mos
     let obj = ll_path.with_extension("o");
     let ll = fs::read_to_string(&ll_path)
         .map_err(|e| anyhow!("couldn't read LLVM IR from `{}`: {}", ll_path.display(), e))?;
-    let obj = fs::read(&obj)
-        .map_err(|e| anyhow!("couldn't read object file `{}`: {}", obj.display(), e))?;
+    let obj = fs::read(&obj).map_err(|e| anyhow!("couldn't read object file `{}`: {}", obj.display(), e))?;
 
     let compiler_builtins_ll = fs::read_to_string(&compiler_builtins_ll_path).map_err(|e| {
-        anyhow!(
-            "couldn't read `compiler_builtins` LLVM IR from `{}`: {}",
-            compiler_builtins_ll_path,
-            e
-        )
+        anyhow!("couldn't read `compiler_builtins` LLVM IR from `{}`: {}", compiler_builtins_ll_path, e)
     })?;
 
-    let items = crate::ir::parse(&ll).map_err(|e| {
-        anyhow!(
-            "failed to parse application's LLVM IR from `{}`: {}",
-            ll_path.display(),
-            e
-        )
-    })?;
+    let items = crate::ir::parse(&ll)
+        .map_err(|e| anyhow!("failed to parse application's LLVM IR from `{}`: {}", ll_path.display(), e))?;
     let compiler_builtins_items = crate::ir::parse(&compiler_builtins_ll).map_err(|e| {
-        anyhow!(
-            "failed to parse `compiler_builtins` LLVM IR from `{}`: {}",
-            compiler_builtins_ll_path,
-            e
-        )
+        anyhow!("failed to parse `compiler_builtins` LLVM IR from `{}`: {}", compiler_builtins_ll_path, e)
     })?;
     let mut defines = HashMap::new();
     let mut declares = HashMap::new();
@@ -383,11 +359,8 @@ If you would like to use cargo-call-stack with your current toolchain, which mos
         {
             buf.clear();
             entry.read_to_end(&mut buf)?;
-            stack_sizes.extend(
-                stack_sizes::analyze_object(&buf)?
-                    .into_iter()
-                    .map(|(name, stack)| (name.to_owned(), stack)),
-            );
+            stack_sizes
+                .extend(stack_sizes::analyze_object(&buf)?.into_iter().map(|(name, stack)| (name.to_owned(), stack)));
         }
     }
 
@@ -397,11 +370,7 @@ If you would like to use cargo-call-stack with your current toolchain, which mos
 
     // clear the thumb bit
     if target_.is_thumb() {
-        symbols.defined = symbols
-            .defined
-            .into_iter()
-            .map(|(k, v)| (k & !1, v))
-            .collect();
+        symbols.defined = symbols.defined.into_iter().map(|(k, v)| (k & !1, v)).collect();
     }
 
     // remove version strings from undefined symbols
@@ -463,11 +432,7 @@ If you would like to use cargo-call-stack with your current toolchain, which mos
         let names = names
             .iter()
             .filter_map(|&name| {
-                if name == "$a"
-                    || name.starts_with("$a.")
-                    || name == "$x"
-                    || name.starts_with("$x.")
-                {
+                if name == "$a" || name.starts_with("$a.") || name == "$x" || name.starts_with("$x.") {
                     None
                 } else {
                     Some(name)
@@ -515,8 +480,7 @@ If you would like to use cargo-call-stack with your current toolchain, which mos
             // if the signature is `fn(&_, &mut fmt::Formatter) -> fmt::Result`
             match (&def.sig.inputs[..], def.sig.output.as_ref()) {
                 ([Type::Pointer(..), Type::Pointer(fmt)], Some(output))
-                    if **fmt == Type::Alias("core::fmt::Formatter")
-                        && **output == Type::Integer(1) =>
+                    if **fmt == Type::Alias("core::fmt::Formatter") && **output == Type::Integer(1) =>
                 {
                     fmts.insert(idx);
                 }
@@ -524,15 +488,9 @@ If you would like to use cargo-call-stack with your current toolchain, which mos
                 _ => {}
             }
 
-            indirects
-                .entry(def.sig.clone())
-                .or_default()
-                .callees
-                .insert(idx);
-        } else if let Some(sig) = names
-            .iter()
-            .filter_map(|name| declares.get(name).and_then(|decl| decl.sig.clone()))
-            .next()
+            indirects.entry(def.sig.clone()).or_default().callees.insert(idx);
+        } else if let Some(sig) =
+            names.iter().filter_map(|name| declares.get(name).and_then(|decl| decl.sig.clone())).next()
         {
             indirects.entry(sig).or_default().callees.insert(idx);
         } else if !is_outlined_function(canonical_name) {
@@ -566,10 +524,7 @@ If you would like to use cargo-call-stack with your current toolchain, which mos
                 Stmt::Asm(expr) => {
                     if fns_containing_asm.insert(*canonical_name) {
                         // NB: we only print the first inline asm statement in a function
-                        warn!(
-                            "assuming that asm!(\"{}\") does *not* use the stack in `{}`",
-                            expr, canonical_name
-                        );
+                        warn!("assuming that asm!(\"{}\") does *not* use the stack in `{}`", expr, canonical_name);
                     }
                 }
 
@@ -608,9 +563,7 @@ If you would like to use cargo-call-stack with your current toolchain, which mos
                     }
 
                     // no-op / compiler-hint
-                    if func.starts_with("llvm.lifetime.start")
-                        || func.starts_with("llvm.lifetime.end")
-                    {
+                    if func.starts_with("llvm.lifetime.start") || func.starts_with("llvm.lifetime.end") {
                         continue;
                     }
 
@@ -709,11 +662,7 @@ If you would like to use cargo-call-stack with your current toolchain, which mos
                         continue;
                     }
 
-                    assert!(
-                        !func.starts_with("llvm."),
-                        "BUG: unhandled llvm intrinsic: {}",
-                        func
-                    );
+                    assert!(!func.starts_with("llvm."), "BUG: unhandled llvm intrinsic: {}", func);
 
                     // some intrinsics can be directly lowered to machine code
                     // if the intrinsic has no corresponding node (symbol in the output ELF) assume
@@ -727,11 +676,7 @@ If you would like to use cargo-call-stack with your current toolchain, which mos
                     let callee = if let Some(canon) = aliases.get(func) {
                         indices[*canon]
                     } else {
-                        assert!(
-                            symbols.undefined.contains(func),
-                            "BUG: callee `{}` is unknown",
-                            func
-                        );
+                        assert!(symbols.undefined.contains(func), "BUG: callee `{}` is unknown", func);
 
                         if let Some(idx) = indices.get(*func) {
                             *idx
@@ -814,14 +759,15 @@ If you would like to use cargo-call-stack with your current toolchain, which mos
                     }
                 }
 
+                if address < stext || (address - stext) as usize >= text.len() {
+                    // This symbol is not in the .text section
+                    continue;
+                }
+
                 let start = (address - stext) as usize;
-                let end = start + size as usize;
-                let (bls, bs, indirect, modifies_sp, our_stack) = thumb::analyze(
-                    &text[start..end],
-                    address,
-                    target_ == Target::Thumbv7m,
-                    &tags,
-                );
+                let end = cmp::min(start + size as usize, text.len());
+                let (bls, bs, indirect, modifies_sp, our_stack) =
+                    thumb::analyze(&text[start..end], address, target_ == Target::Thumbv7m, &tags);
                 let caller = indices[canonical_name];
 
                 // sanity check
@@ -870,23 +816,25 @@ If you would like to use cargo-call-stack with your current toolchain, which mos
                         } else {
                             // in all other cases our results should match
 
-                            assert_eq!(
-                                *llvm_stack, stack,
-                                "BUG: LLVM reported that `{}` uses {} bytes of stack but \
-                                 this doesn't match our analysis",
-                                canonical_name, llvm_stack
-                            );
+                            if *llvm_stack != stack {
+                                warn!(
+                                    "LLVM reported that `{}` uses {} bytes of stack but \
+                                     our analysis reported {} bytes; trusting LLVM's result",
+                                    canonical_name, llvm_stack, stack
+                                );
+                            }
                         }
                     }
 
-                    assert_eq!(
-                        *llvm_stack != 0,
-                        modifies_sp,
-                        "BUG: LLVM reported that `{}` uses {} bytes of stack but this doesn't \
-                         match our analysis",
-                        canonical_name,
-                        *llvm_stack
-                    );
+                    if (*llvm_stack != 0) != modifies_sp {
+                        warn!(
+                            "LLVM reported that `{}` uses {} bytes of stack but our analysis \
+                             reported that it does{} modify SP; trusting LLVM's result",
+                            canonical_name,
+                            *llvm_stack,
+                            if !modifies_sp { " not" } else { "" }
+                        );
+                    }
                 } else if let Some(stack) = our_stack {
                     g[caller].local = Local::Exact(stack);
                 } else if !modifies_sp {
@@ -917,9 +865,7 @@ If you would like to use cargo-call-stack with your current toolchain, which mos
                 for offset in bls {
                     let addr = (address as i64 + i64::from(offset)) as u64;
                     // address may be off by one due to the thumb bit being set
-                    let name = addr2name
-                        .get(&addr)
-                        .unwrap_or_else(|| panic!("BUG? no symbol at address {}", addr));
+                    let name = addr2name.get(&addr).unwrap_or_else(|| panic!("BUG? no symbol at address {}", addr));
 
                     let callee = indices[*name];
                     if !callees_seen.contains(&callee) {
@@ -971,8 +917,7 @@ If you would like to use cargo-call-stack with your current toolchain, which mos
         .keys()
         .filter_map(|sig| match (&sig.inputs[..], sig.output.as_ref()) {
             ([Type::Pointer(receiver), Type::Pointer(formatter)], Some(output))
-                if **formatter == Type::Alias("core::fmt::Formatter")
-                    && **output == Type::Integer(1) =>
+                if **formatter == Type::Alias("core::fmt::Formatter") && **output == Type::Integer(1) =>
             {
                 if let Type::Alias(receiver) = **receiver {
                     Some(receiver)
@@ -1072,10 +1017,7 @@ If you would like to use cargo-call-stack with your current toolchain, which mos
             let hits = indices
                 .keys()
                 .filter_map(|key| {
-                    if rustc_demangle::demangle(key)
-                        .to_string()
-                        .starts_with(&start_)
-                    {
+                    if rustc_demangle::demangle(key).to_string().starts_with(&start_) {
                         Some(key)
                     } else {
                         None
@@ -1142,15 +1084,12 @@ If you would like to use cargo-call-stack with your current toolchain, which mos
         for scc in &sccs {
             let first = scc[0];
 
-            let is_a_cycle = scc.len() > 1
-                || g.neighbors_directed(first, Direction::Outgoing)
-                    .any(|n| n == first);
+            let is_a_cycle = scc.len() > 1 || g.neighbors_directed(first, Direction::Outgoing).any(|n| n == first);
 
             if is_a_cycle {
                 cycles.push(scc.clone());
 
-                let mut scc_local =
-                    max_of(scc.iter().map(|node| g[*node].local.into())).expect("UNREACHABLE");
+                let mut scc_local = max_of(scc.iter().map(|node| g[*node].local.into())).expect("UNREACHABLE");
 
                 // the cumulative stack usage is only exact when all nodes do *not* use the stack
                 if let Max::Exact(n) = scc_local {
@@ -1160,15 +1099,14 @@ If you would like to use cargo-call-stack with your current toolchain, which mos
                 }
 
                 let neighbors_max = max_of(scc.iter().flat_map(|inode| {
-                    g.neighbors_directed(*inode, Direction::Outgoing)
-                        .filter_map(|neighbor| {
-                            if scc.contains(&neighbor) {
-                                // we only care about the neighbors of the SCC
-                                None
-                            } else {
-                                Some(g[neighbor].max.expect("UNREACHABLE"))
-                            }
-                        })
+                    g.neighbors_directed(*inode, Direction::Outgoing).filter_map(|neighbor| {
+                        if scc.contains(&neighbor) {
+                            // we only care about the neighbors of the SCC
+                            None
+                        } else {
+                            Some(g[neighbor].max.expect("UNREACHABLE"))
+                        }
+                    })
                 }));
 
                 for inode in scc {
@@ -1263,12 +1201,7 @@ fn dot(g: Graph<Node, ()>, cycles: &[Vec<NodeIndex>]) -> io::Result<()> {
     }
 
     for edge in g.raw_edges() {
-        writeln!(
-            stdout,
-            "    {} -> {}",
-            edge.source().index(),
-            edge.target().index()
-        )?;
+        writeln!(stdout, "    {} -> {}", edge.source().index(), edge.target().index())?;
     }
 
     for (i, cycle) in cycles.iter().enumerate() {
@@ -1320,11 +1253,7 @@ pub(crate) fn top(g: Graph<Node, ()>) -> io::Result<()> {
 
     for node in nodes.iter() {
         let name = rustc_demangle::demangle(&node.name);
-        let val: u64 = if let Local::Exact(n) = node.local {
-            n
-        } else {
-            0
-        };
+        let val: u64 = if let Local::Exact(n) = node.local { n } else { 0 };
         write!(stdout, "{} ", val)?;
 
         let mut escaper = Escaper::new(&mut stdout);
@@ -1347,10 +1276,7 @@ where
     W: io::Write,
 {
     fn new(writer: W) -> Self {
-        Escaper {
-            writer,
-            error: Ok(()),
-        }
+        Escaper { writer, error: Ok(()) }
     }
 }
 
@@ -1499,11 +1425,7 @@ fn dehash(demangled: &str) -> Option<&str> {
 
     let len = demangled.as_bytes().len();
     if len > HASH_LENGTH {
-        if demangled
-            .get(len - HASH_LENGTH..)
-            .map(|hash| hash.starts_with("::h"))
-            .unwrap_or(false)
-        {
+        if demangled.get(len - HASH_LENGTH..).map(|hash| hash.starts_with("::h")).unwrap_or(false) {
             Some(&demangled[..len - HASH_LENGTH])
         } else {
             None

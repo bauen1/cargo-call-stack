@@ -287,10 +287,31 @@ fn assign(i: &str) -> IResult<&str, Stmt> {
 }
 
 fn stmt(i: &str) -> IResult<&str, Stmt> {
-    alt((label, comment, |i| {
-        let i = space1(i)?.0;
-        alt((assign, asm, bitcast_call, direct_call, indirect_call, other))(i)
-    }))(i)
+    alt((
+        label,
+        comment,
+        |i| {
+            let i = char('#')(i)?.0;
+            let i = not_line_ending(i)?.0;
+            Ok((i, Stmt::Other))
+        },
+        |i| {
+            let i = space1(i)?.0;
+            alt((
+                assign,
+                asm,
+                bitcast_call,
+                direct_call,
+                indirect_call,
+                |i| {
+                    let i = char('#')(i)?.0;
+                    let i = not_line_ending(i)?.0;
+                    Ok((i, Stmt::Other))
+                },
+                other,
+            ))(i)
+        },
+    ))(i)
 }
 
 #[cfg(test)]
