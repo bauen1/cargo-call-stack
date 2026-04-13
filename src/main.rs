@@ -94,8 +94,8 @@ fn main() -> anyhow::Result<()> {
 // Font used in the dot graphs
 const FONT: &str = "monospace";
 
-const SUPPORTED_NIGHTLY_HASH: &str = "2b603f95a48f10f931a61dd208fe3e5ffd64e491";
-const SUPPORTED_NIGHTLY_NAME: &str = "nightly-2023-11-13";
+const SUPPORTED_NIGHTLY_HASH: &str = "53732d5e076329a62f71d3c6901886ce8a71e812";
+const SUPPORTED_NIGHTLY_NAME: &str = "nightly-2025-11-21";
 const UNSUPPORTED_MODE_KEY: &str = "CARGO_CALL_STACK_UNSPPORTED_NIGHTLY";
 const UNSUPPORTED_MODE_VALUE: &str = "I won't open issues about unsupported toolchains";
 
