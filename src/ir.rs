@@ -8,7 +8,7 @@ use nom::{
     combinator::{map, map_res, opt},
     error::ErrorKind,
     error_position,
-    multi::{many0, many1, separated_list0},
+    multi::{many0, many1},
     sequence::delimited,
     IResult,
 };

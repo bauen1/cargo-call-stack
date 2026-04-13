@@ -49,13 +49,13 @@ pub(crate) fn wrapper() -> anyhow::Result<i32> {
         }
     }
 
-    if args.crate_name == "compiler_builtins" {
+    if args.crate_name == Some("compiler_builtins".to_string()) {
         rustc.arg("--emit=llvm-ir");
 
         let out_dir = args
             .out_dir
             .ok_or_else(|| anyhow!("missing `--out-dir` argument"))?;
-        let ll_path = format!("{}/{}{}.ll", out_dir, args.crate_name, args.extra_filename);
+        let ll_path = format!("{}/{}{}.ll", out_dir, args.crate_name.unwrap(), args.extra_filename);
         eprintln!("{}{}", COMPILER_BUILTINS_LL_PATH_MARKER, ll_path);
     }
 
