@@ -881,14 +881,14 @@ If you would like to use cargo-call-stack with your current toolchain, which mos
                         // intra-function B branches are not function calls
                     } else {
                         // address may be off by one due to the thumb bit being set
-                        let name = addr2name
-                            .get(&(addr as u64))
-                            .unwrap_or_else(|| panic!("BUG? no symbol at address {}", addr));
-
-                        let callee = indices[*name];
-                        if !callees_seen.contains(&callee) {
-                            g.add_edge(caller, callee, ());
-                            callees_seen.insert(callee);
+                        if let Some(name) = addr2name.get(&(addr as u64)) {
+                            let callee = indices[*name];
+                            if !callees_seen.contains(&callee) {
+                                g.add_edge(caller, callee, ());
+                                callees_seen.insert(callee);
+                            }
+                        } else {
+                            warn!("BUG? no symbol at address {}", addr);
                         }
                     }
                 }
@@ -1070,7 +1070,7 @@ If you would like to use cargo-call-stack with your current toolchain, which mos
             // invalidate `indices` to prevent misuse
             indices.clear();
         } else {
-            error!("start point not found; the graph will not be filtered")
+            error!("start point '{:?}' not found; the graph will not be filtered", &args.start)
         }
     }
 
